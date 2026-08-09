@@ -32,4 +32,9 @@ RUN chmod +x ./entrypoint.sh
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
+# Prisma's own OpenSSL-version auto-detection is unreliable on Alpine (it
+# tends to misdetect 3.x as 1.1.x and then tries to load a query engine
+# that doesn't match the libssl actually installed). Pointing straight at
+# the engine we generated for this image sidesteps that detection entirely.
+ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/node_modules/.prisma/client/libquery_engine-linux-musl-openssl-3.0.x.so.node
 ENTRYPOINT ["./entrypoint.sh"]
