@@ -61,7 +61,7 @@ function SetPasswordForm() {
     <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ width: '100%', maxWidth: 380 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 24 }}>
-          <img src="/ghost-logo.png" alt="Ghost Live" style={{ width: 32, height: 32 }} />
+          <img src="/ghost-logo.png" alt="Ghost Live" style={{ width: 64, height: 64 }} />
           <span style={{ fontSize: 22, fontWeight: 800 }}>Ghost Live</span>
         </div>
 
