@@ -1,6 +1,9 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
+  // "native" keeps local dev (macOS) working; the musl target matches
+  // node:20-alpine's OpenSSL 3.x, which is what the Docker image runs on.
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
