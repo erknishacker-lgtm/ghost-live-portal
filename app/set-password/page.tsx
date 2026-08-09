@@ -60,7 +60,10 @@ function SetPasswordForm() {
   return (
     <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ width: '100%', maxWidth: 380 }}>
-        <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 24, textAlign: 'center' }}>Ghost Live</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 24 }}>
+          <img src="/ghost-logo.png" alt="Ghost Live" style={{ width: 32, height: 32 }} />
+          <span style={{ fontSize: 22, fontWeight: 800 }}>Ghost Live</span>
+        </div>
 
         {token ? (
           <form onSubmit={onSubmitPassword} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

@@ -45,7 +45,10 @@ export default function LoginPage() {
           background: 'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.06), transparent 55%)'
         }}
       >
-        <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 24 }}>Ghost Live</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+          <img src="/ghost-logo.png" alt="Ghost Live" style={{ width: 32, height: 32 }} />
+          <span style={{ fontSize: 22, fontWeight: 800 }}>Ghost Live</span>
+        </div>
         <h1 style={{ fontSize: 40, fontWeight: 800, lineHeight: 1.15, margin: '0 0 16px' }}>
           Sua operação de LIVE começa aqui.
         </h1>
