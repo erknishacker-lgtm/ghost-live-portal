@@ -5,9 +5,11 @@ let client: Resend | null = null;
 function getClient(): Resend | null {
   if (client) return client;
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    if (process.env.NODE_ENV === 'production') throw new Error('RESEND_API_KEY não configurada.');
-    return null; // dev/local without email configured — caller logs to console instead
+  // Also treat obvious placeholders as "not configured" so a forgotten
+  // .env.example-style value degrades to logging instead of a doomed,
+  // silently-swallowed API call.
+  if (!apiKey || apiKey.includes('placeholder') || apiKey === 're_...') {
+    return null; // no real key — caller logs to console instead
   }
   client = new Resend(apiKey);
   return client;
@@ -23,7 +25,13 @@ async function send(to: string, subject: string, html: string, devLogLabel: stri
     console.info(`[email:dev] ${devLogLabel} → ${to}\n${html.match(/href="([^"]+)"/)?.[1] ?? ''}`);
     return;
   }
-  await resend.emails.send({ from: process.env.EMAIL_FROM || 'Ghost Live <no-reply@louzadadigitalhub.com>', to, subject, html });
+  // resend.emails.send() does NOT throw on API-level failures — it resolves
+  // with { data, error }. Missing this check means a bad key/unverified
+  // domain/rate limit fails completely silently.
+  const result = await resend.emails.send({ from: process.env.EMAIL_FROM || 'Ghost Live <no-reply@louzadadigitalhub.com>', to, subject, html });
+  if (result.error) {
+    throw new Error(`Resend: ${result.error.message || result.error.name || 'falha ao enviar'}`);
+  }
 }
 
 export async function sendSetPasswordEmail(to: string, name: string | null, token: string, licenseKey: string, plan: string) {

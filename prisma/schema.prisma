@@ -190,3 +190,18 @@ model SystemFlag {
 
   @@map("system_flags")
 }
+
+// -----------------------------------------------------------------------
+// Extension distribution (admin-uploaded .zip, served to logged-in users)
+// -----------------------------------------------------------------------
+
+model ExtensionRelease {
+  id             String   @id @default(uuid())
+  version        String
+  filename       String
+  sizeBytes      Int      @map("size_bytes")
+  uploadedByUserId String? @map("uploaded_by_user_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("extension_releases")
+}
