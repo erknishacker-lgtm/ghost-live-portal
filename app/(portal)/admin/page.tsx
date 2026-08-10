@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { currentPortalUser } from '@/lib/auth/require-user';
 import { getLatestExtensionRelease } from '@/lib/storage/extension';
 import { UploadForm } from './upload-form';
+import { TestLicenseForm } from './test-license-form';
 
 function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -32,8 +33,17 @@ export default async function AdminPage() {
         </div>
       )}
 
-      <div className="card">
+      <div className="card" style={{ marginBottom: 32 }}>
         <UploadForm />
+      </div>
+
+      <h2 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 8px' }}>Gerar chave de teste</h2>
+      <p style={{ color: '#9a9a9a', margin: '0 0 16px' }}>
+        Cria uma licença sem passar pelo Stripe, com validade e nº de dispositivos que você escolher — pra mandar pra
+        alguém testar.
+      </p>
+      <div className="card">
+        <TestLicenseForm />
       </div>
     </main>
   );
