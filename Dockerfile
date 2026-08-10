@@ -17,10 +17,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 RUN apk add --no-cache openssl
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
-# Mount a persistent EasyPanel volume at this path — anything written
-# outside a mounted volume is lost on the next deploy (the container
-# filesystem is rebuilt from the image each time).
-RUN mkdir -p /app/storage && chown nextjs:nodejs /app/storage
 
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./

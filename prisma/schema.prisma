@@ -200,6 +200,10 @@ model ExtensionRelease {
   version        String
   filename       String
   sizeBytes      Int      @map("size_bytes")
+  // Stored straight in Postgres (bytea) instead of a filesystem/volume —
+  // one small admin-uploaded file, and the DB is already the one thing in
+  // this stack with real persistence sorted out.
+  data           Bytes
   uploadedByUserId String? @map("uploaded_by_user_id")
   createdAt      DateTime @default(now()) @map("created_at")
 

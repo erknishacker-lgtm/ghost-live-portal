@@ -11,7 +11,7 @@ export async function GET() {
   const release = await getLatestExtensionRelease();
   if (!release) return NextResponse.json({ error: 'Nenhuma versão disponível ainda.' }, { status: 404 });
 
-  const buffer = await readExtensionFile().catch(() => null);
+  const buffer = await readExtensionFile(release.id).catch(() => null);
   if (!buffer) return NextResponse.json({ error: 'Arquivo indisponível no momento.' }, { status: 500 });
 
   return new NextResponse(new Uint8Array(buffer), {
