@@ -1,11 +1,15 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db/prisma';
 import { generateLicenseKey } from '@/lib/licensing/tokens';
+import { createPasswordSetToken } from '@/lib/auth/password-tokens';
+import { sendSetPasswordEmail } from '@/lib/email/resend';
 
 /**
  * Admin-issued test license — not tied to any Stripe subscription. Reuses
  * the same license_key/license_devices machinery as a real purchase, just
  * with an admin-chosen expiry and device count instead of a plan lookup.
+ * Also mirrors provisionLicenseFromCheckout's set-password email so the
+ * tester can log in to the portal, not just receive a bare key.
  */
 export async function createTestLicense(params: {
   email: string;
@@ -41,7 +45,15 @@ export async function createTestLicense(params: {
       await prisma.licenseActivity.create({
         data: { licenseId: license.id, eventType: 'trial_issued', detail: { by: params.createdByUserId, days, maxDevices } }
       }).catch(() => {});
-      return { user, license };
+
+      const token = await createPasswordSetToken(user.id);
+      let emailed = true;
+      await sendSetPasswordEmail(email, user.name, token, license.licenseKey, `teste (${days} dias)`).catch((error) => {
+        console.error('[createTestLicense] falha ao enviar e-mail', error);
+        emailed = false;
+      });
+
+      return { user, license, emailed };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') continue;
       throw error;

@@ -7,6 +7,7 @@ type Result = {
   email: string;
   expiresAt: string;
   maxDevices: number;
+  emailed: boolean;
 };
 
 export function TestLicenseForm() {
@@ -82,6 +83,11 @@ export function TestLicenseForm() {
         <div style={{ marginTop: 20, padding: 16, background: '#0a0a0a', border: '1px solid #2a2a2a', borderRadius: 8 }}>
           <div style={{ fontSize: 11, color: '#9a9a9a', marginBottom: 6 }}>
             Chave gerada pra {result.email} · válida até {new Date(result.expiresAt).toLocaleString('pt-BR')} · {result.maxDevices} dispositivo(s)
+          </div>
+          <div style={{ fontSize: 11, marginBottom: 10, color: result.emailed ? '#4ade80' : '#f87171' }}>
+            {result.emailed
+              ? 'E-mail com a chave e o link pra definir senha foi enviado.'
+              : 'Não foi possível enviar o e-mail — copie e envie a chave manualmente.'}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 18, fontWeight: 700, letterSpacing: 1 }}>{result.licenseKey}</div>

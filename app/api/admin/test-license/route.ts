@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message || 'Dados inválidos.' }, { status: 400 });
   }
 
-  const { license } = await createTestLicense({
+  const { license, emailed } = await createTestLicense({
     email: parsed.data.email,
     name: parsed.data.name || null,
     days: parsed.data.days,
@@ -37,6 +37,7 @@ export async function POST(request: Request) {
     licenseKey: license.licenseKey,
     email: parsed.data.email.trim().toLowerCase(),
     expiresAt: license.expiresAt,
-    maxDevices: license.maxDevices
+    maxDevices: license.maxDevices,
+    emailed
   });
 }
