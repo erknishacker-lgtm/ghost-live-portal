@@ -18,10 +18,17 @@ export default async function AdminPage() {
   return (
     <main style={{ maxWidth: 720, margin: '0 auto', padding: '48px 24px' }}>
       <div style={{ fontSize: 11, letterSpacing: 1, color: '#9a9a9a', textTransform: 'uppercase' }}>Admin</div>
-      <h1 style={{ fontSize: 32, fontWeight: 800, margin: '4px 0 8px' }}>Publicar extensão</h1>
-      <p style={{ color: '#9a9a9a', margin: '0 0 32px' }}>
-        O arquivo enviado aqui fica disponível pro botão &quot;Baixar extensão&quot; de todos os clientes.
-      </p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div>
+          <h1 style={{ fontSize: 32, fontWeight: 800, margin: '4px 0 8px' }}>Publicar extensão</h1>
+          <p style={{ color: '#9a9a9a', margin: '0 0 32px' }}>
+            O arquivo enviado aqui fica disponível pro botão &quot;Baixar extensão&quot; de todos os clientes.
+          </p>
+        </div>
+        <a href="/admin/licenses" className="btn-secondary" style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}>
+          Ver todas as contas e chaves →
+        </a>
+      </div>
 
       {release && (
         <div className="card" style={{ marginBottom: 24 }}>
