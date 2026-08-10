@@ -22,6 +22,9 @@ export async function POST(request: Request) {
 
   const planId = parsed.data.plan_id as PlanId;
   const plan = PLANS[planId];
+  if (!plan.active) {
+    return NextResponse.json({ error: 'Esse plano não está disponível no momento.' }, { status: 400 });
+  }
   const priceId = process.env[plan.stripePriceEnvVar];
   if (!priceId) {
     console.error(`[checkout] missing env var ${plan.stripePriceEnvVar}`);
