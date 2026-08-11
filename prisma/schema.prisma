@@ -109,6 +109,10 @@ model LicenseDevice {
   lastExtensionVersion  String?   @map("last_extension_version")
   sessionTokenHash      String    @unique @map("session_token_hash")
   sessionExpiresAt      DateTime  @map("session_expires_at")
+  // Set via chrome.runtime.setUninstallURL — Chrome opens this URL as a plain
+  // GET navigation on uninstall, so it carries its own single-purpose token
+  // rather than the session bearer token (never exposed in browser history/logs).
+  uninstallTokenHash    String?   @unique @map("uninstall_token_hash")
   activatedAt           DateTime  @default(now()) @map("activated_at")
   lastSeenAt            DateTime  @default(now()) @map("last_seen_at")
 

@@ -5,6 +5,14 @@ import { LicenseApiError } from '@/lib/licensing/errors';
 
 const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days, rolling on each successful verify
 
+function baseUrl(): string {
+  return (process.env.APP_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
+}
+
+function uninstallUrlFor(token: string): string {
+  return `${baseUrl()}/api/v1/license/uninstall?token=${encodeURIComponent(token)}`;
+}
+
 type ActivateInput = {
   email: string;
   licenseKey: string;
@@ -64,6 +72,8 @@ export async function activateLicense(input: ActivateInput) {
   const sessionToken = generateOpaqueToken();
   const sessionTokenHash = hashToken(sessionToken);
   const sessionExpiresAt = new Date(Date.now() + SESSION_TTL_MS);
+  const uninstallToken = generateOpaqueToken();
+  const uninstallTokenHash = hashToken(uninstallToken);
 
   const deviceData = {
     deviceId: input.deviceId,
@@ -73,6 +83,7 @@ export async function activateLicense(input: ActivateInput) {
     lastExtensionVersion: input.extensionVersion,
     sessionTokenHash,
     sessionExpiresAt,
+    uninstallTokenHash,
     lastSeenAt: new Date()
   };
 
@@ -109,6 +120,7 @@ export async function activateLicense(input: ActivateInput) {
   return {
     session_token: sessionToken,
     session_expires_at: sessionExpiresAt.toISOString(),
+    uninstall_url: uninstallUrlFor(uninstallToken),
     license: {
       plan: license.plan,
       expires_at: license.expiresAt ? license.expiresAt.toISOString() : null,
@@ -146,13 +158,20 @@ export async function verifySession(sessionToken: string, deviceId: string, appV
   }
 
   const sessionExpiresAt = new Date(Date.now() + SESSION_TTL_MS);
+  // Devices activated before the uninstall-tracking feature existed have no
+  // token yet. Mint one lazily so the extension registers an uninstall URL on
+  // its next verify instead of requiring a re-activation.
+  const needsUninstallToken = !device.uninstallTokenHash;
+  const uninstallToken = needsUninstallToken ? generateOpaqueToken() : null;
+
   await prisma.licenseDevice.update({
     where: { id: device.id },
     data: {
       lastSeenAt: new Date(),
       lastAppVersion: appVersion ?? device.lastAppVersion,
       lastExtensionVersion: extensionVersion ?? device.lastExtensionVersion,
-      sessionExpiresAt
+      sessionExpiresAt,
+      ...(uninstallToken ? { uninstallTokenHash: hashToken(uninstallToken) } : {})
     }
   });
 
@@ -162,7 +181,8 @@ export async function verifySession(sessionToken: string, deviceId: string, appV
     session_expires_at: sessionExpiresAt.toISOString(),
     plan: license.plan,
     expires_at: license.expiresAt ? license.expiresAt.toISOString() : null,
-    features: license.features
+    features: license.features,
+    ...(uninstallToken ? { uninstall_url: uninstallUrlFor(uninstallToken) } : {})
   };
 }
 
@@ -172,6 +192,22 @@ export async function endSession(sessionToken: string) {
   if (!device) return { ok: true };
   await prisma.licenseDevice.delete({ where: { id: device.id } });
   await logActivity(device.licenseId, 'logout', { deviceId: device.deviceId });
+  return { ok: true };
+}
+
+/**
+ * Hit by a real browser navigation (chrome.runtime.setUninstallURL opens this
+ * as a GET when the extension is removed) — never trust it the way an
+ * authenticated bearer-token route would be trusted. An unknown/already-used
+ * token is treated the same as success so the confirmation page never reveals
+ * whether a given link was ever valid.
+ */
+export async function uninstallDeviceByToken(uninstallToken: string) {
+  const tokenHash = hashToken(uninstallToken);
+  const device = await prisma.licenseDevice.findUnique({ where: { uninstallTokenHash: tokenHash } });
+  if (!device) return { ok: true };
+  await prisma.licenseDevice.delete({ where: { id: device.id } });
+  await logActivity(device.licenseId, 'uninstall', { deviceId: device.deviceId });
   return { ok: true };
 }
 
