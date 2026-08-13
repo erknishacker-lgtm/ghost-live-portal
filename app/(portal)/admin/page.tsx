@@ -3,6 +3,7 @@ import { currentPortalUser } from '@/lib/auth/require-user';
 import { getLatestExtensionRelease } from '@/lib/storage/extension';
 import { UploadForm } from './upload-form';
 import { TestLicenseForm } from './test-license-form';
+import { IntegrityHashForm } from './integrity-hash-form';
 
 function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -51,6 +52,15 @@ export default async function AdminPage() {
       </p>
       <div className="card">
         <TestLicenseForm />
+      </div>
+
+      <h2 style={{ fontSize: 22, fontWeight: 800, margin: '32px 0 8px' }}>Hash esperado por versão</h2>
+      <p style={{ color: '#9a9a9a', margin: '0 0 16px' }}>
+        Detecta cópias com código adulterado (ex: licença crackeada) comparando o hash que a extensão reporta com o
+        hash oficial de cada versão publicada.
+      </p>
+      <div className="card">
+        <IntegrityHashForm />
       </div>
     </main>
   );

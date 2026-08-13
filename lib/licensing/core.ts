@@ -13,6 +13,33 @@ function uninstallUrlFor(token: string): string {
   return `${baseUrl()}/api/v1/license/uninstall?token=${encodeURIComponent(token)}`;
 }
 
+function integrityFlagKey(extensionVersion: string): string {
+  return `integrity_hash_${extensionVersion}`;
+}
+
+/**
+ * Looks up the known-good hash registered for a version (via the admin
+ * "hash esperado" form) and reports whether a reported hash matches it.
+ * No registered hash for that version yet => `undefined`, meaning "unknown,
+ * don't flag" — we'd rather miss a detection than false-flag every device
+ * on a version nobody's registered a hash for.
+ */
+async function checkCodeIntegrity(extensionVersion: string | undefined, codeHash: string | undefined): Promise<boolean | undefined> {
+  if (!extensionVersion || !codeHash) return undefined;
+  const flag = await prisma.systemFlag.findUnique({ where: { key: integrityFlagKey(extensionVersion) } });
+  const expected = (flag?.value as { hash?: string } | null)?.hash;
+  if (!expected) return undefined;
+  return codeHash === expected;
+}
+
+export async function setIntegrityHash(extensionVersion: string, hash: string) {
+  await prisma.systemFlag.upsert({
+    where: { key: integrityFlagKey(extensionVersion) },
+    create: { key: integrityFlagKey(extensionVersion), value: { hash } },
+    update: { value: { hash } }
+  });
+}
+
 type ActivateInput = {
   email: string;
   licenseKey: string;
@@ -22,6 +49,7 @@ type ActivateInput = {
   extensionVersion?: string;
   platform?: string;
   ip?: string;
+  codeHash?: string;
 };
 
 function statusToFatalCode(status: LicenseStatus): string {
@@ -74,6 +102,7 @@ export async function activateLicense(input: ActivateInput) {
   const sessionExpiresAt = new Date(Date.now() + SESSION_TTL_MS);
   const uninstallToken = generateOpaqueToken();
   const uninstallTokenHash = hashToken(uninstallToken);
+  const integrityMatch = await checkCodeIntegrity(input.extensionVersion, input.codeHash);
 
   const deviceData = {
     deviceId: input.deviceId,
@@ -84,7 +113,10 @@ export async function activateLicense(input: ActivateInput) {
     sessionTokenHash,
     sessionExpiresAt,
     uninstallTokenHash,
-    lastSeenAt: new Date()
+    lastSeenAt: new Date(),
+    lastIp: input.ip,
+    codeHash: input.codeHash,
+    codeModifiedAt: integrityMatch === false ? new Date() : integrityMatch === true ? null : undefined
   };
 
   // A plan can allow more than one simultaneous device (e.g. "2 contas
@@ -144,7 +176,14 @@ async function resolveActiveDeviceByToken(sessionToken: string, deviceId?: strin
   return device;
 }
 
-export async function verifySession(sessionToken: string, deviceId: string, appVersion?: string, extensionVersion?: string) {
+export async function verifySession(
+  sessionToken: string,
+  deviceId: string,
+  appVersion?: string,
+  extensionVersion?: string,
+  ip?: string,
+  codeHash?: string
+) {
   const device = await resolveActiveDeviceByToken(sessionToken, deviceId);
   const license = device.license;
 
@@ -163,6 +202,8 @@ export async function verifySession(sessionToken: string, deviceId: string, appV
   // its next verify instead of requiring a re-activation.
   const needsUninstallToken = !device.uninstallTokenHash;
   const uninstallToken = needsUninstallToken ? generateOpaqueToken() : null;
+  const resolvedVersion = extensionVersion ?? device.lastExtensionVersion ?? undefined;
+  const integrityMatch = await checkCodeIntegrity(resolvedVersion, codeHash);
 
   await prisma.licenseDevice.update({
     where: { id: device.id },
@@ -171,6 +212,10 @@ export async function verifySession(sessionToken: string, deviceId: string, appV
       lastAppVersion: appVersion ?? device.lastAppVersion,
       lastExtensionVersion: extensionVersion ?? device.lastExtensionVersion,
       sessionExpiresAt,
+      ...(ip ? { lastIp: ip } : {}),
+      ...(codeHash ? { codeHash } : {}),
+      ...(integrityMatch === false ? { codeModifiedAt: new Date() } : {}),
+      ...(integrityMatch === true ? { codeModifiedAt: null } : {}),
       ...(uninstallToken ? { uninstallTokenHash: hashToken(uninstallToken) } : {})
     }
   });
@@ -223,6 +268,9 @@ export async function deactivateDeviceByToken(sessionToken: string, deviceId: st
  * bearer). `deviceRowId` is the LicenseDevice.id shown to the logged-in
  * owner of the license — never trust a caller-supplied licenseId/deviceId
  * pair here without also checking license ownership at the route level.
+ *
+ * Also used, unmodified, by the admin "Redefinir" action — admin resets
+ * intentionally bypass the cooldown below (see deactivateDeviceByCustomer).
  */
 export async function deactivateDeviceByRowId(deviceRowId: string) {
   const device = await prisma.licenseDevice.findUnique({ where: { id: deviceRowId } });
@@ -230,6 +278,30 @@ export async function deactivateDeviceByRowId(deviceRowId: string) {
   await prisma.licenseDevice.delete({ where: { id: deviceRowId } });
   await logActivity(device.licenseId, 'deactivate_device', { via: 'portal', deviceId: device.deviceId });
   return { ok: true };
+}
+
+const DEVICE_RESET_COOLDOWN_MS = 8 * 60 * 60 * 1000; // 8h
+
+/**
+ * Customer-initiated device reset, rate-limited per license so a single
+ * device slot can't be cycled through many people back-to-back. Legit
+ * "I switched PCs" use is unaffected — one reset every 8h is generous for
+ * that, but blocks using the reset button as a free multi-device workaround.
+ */
+export async function deactivateDeviceByCustomer(licenseId: string, deviceRowId: string) {
+  const license = await prisma.license.findUnique({ where: { id: licenseId } });
+  if (!license) throw new LicenseApiError('NOT_FOUND', 404);
+
+  if (license.lastDeviceResetAt) {
+    const elapsed = Date.now() - license.lastDeviceResetAt.getTime();
+    if (elapsed < DEVICE_RESET_COOLDOWN_MS) {
+      const retryAfterSeconds = Math.ceil((DEVICE_RESET_COOLDOWN_MS - elapsed) / 1000);
+      throw new LicenseApiError('RESET_COOLDOWN', 429, 'Aguarde para redefinir de novo.', retryAfterSeconds);
+    }
+  }
+
+  await prisma.license.update({ where: { id: licenseId }, data: { lastDeviceResetAt: new Date() } });
+  return deactivateDeviceByRowId(deviceRowId);
 }
 
 type SaleEventInput = {

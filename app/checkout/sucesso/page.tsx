@@ -1,3 +1,6 @@
+// See app/login/page.tsx for why nonce-based CSP requires this.
+export const dynamic = 'force-dynamic';
+
 export default function CheckoutSuccessPage() {
   return (
     <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center' }}>

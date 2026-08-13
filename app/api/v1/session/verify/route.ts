@@ -3,13 +3,15 @@ import { z } from 'zod';
 import { verifySession } from '@/lib/licensing/core';
 import { LicenseApiError } from '@/lib/licensing/errors';
 import { extractBearerToken } from '@/lib/http/bearer';
+import { clientIp } from '@/lib/http/rate-limit';
 
 export const runtime = 'nodejs';
 
 const bodySchema = z.object({
   device_id: z.string().trim().min(1),
   app_version: z.string().trim().optional(),
-  extension_version: z.string().trim().optional()
+  extension_version: z.string().trim().optional(),
+  code_hash: z.string().trim().optional()
 });
 
 export async function POST(request: Request) {
@@ -25,7 +27,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await verifySession(token, parsed.data.device_id, parsed.data.app_version, parsed.data.extension_version);
+    const result = await verifySession(
+      token,
+      parsed.data.device_id,
+      parsed.data.app_version,
+      parsed.data.extension_version,
+      clientIp(request),
+      parsed.data.code_hash
+    );
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof LicenseApiError) {

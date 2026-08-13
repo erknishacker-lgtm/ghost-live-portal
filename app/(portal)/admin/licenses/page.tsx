@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { currentPortalUser } from '@/lib/auth/require-user';
 import { prisma } from '@/lib/db/prisma';
 import { LicenseRowActions } from './license-row-actions';
+import { AdminResetDeviceButton } from './admin-reset-device-button';
 
 const STATUS_LABEL: Record<string, string> = {
   active: 'Ativa',
@@ -136,8 +137,34 @@ export default async function AdminLicensesPage({
                   <td style={{ padding: '12px 16px', verticalAlign: 'top' }}>
                     <span style={{ color: STATUS_COLOR[status] ?? '#fff', fontWeight: 700 }}>{STATUS_LABEL[status] ?? status}</span>
                   </td>
-                  <td style={{ padding: '12px 16px', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
-                    {license.devices.length}/{license.maxDevices >= 999 ? '∞' : license.maxDevices}
+                  <td style={{ padding: '12px 16px', verticalAlign: 'top', minWidth: 180 }}>
+                    <div style={{ color: '#9a9a9a', fontSize: 11, marginBottom: 4 }}>
+                      {license.devices.length}/{license.maxDevices >= 999 ? '∞' : license.maxDevices}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {license.devices.map((device) => (
+                        <div key={device.id} style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <span style={{ fontFamily: 'ui-monospace, monospace', color: '#d4d4d4' }}>{device.lastIp || '—'}</span>
+                          <span style={{ color: '#6a6a6a' }}>{device.deviceName || device.platform || ''}</span>
+                          {device.codeModifiedAt && (
+                            <span
+                              title={`Hash divergente desde ${formatDateTime(device.codeModifiedAt)}`}
+                              style={{
+                                color: '#ff2d6e',
+                                background: 'rgba(255,45,110,.12)',
+                                border: '1px solid rgba(255,45,110,.35)',
+                                borderRadius: 999,
+                                padding: '1px 8px',
+                                fontWeight: 700
+                              }}
+                            >
+                              ⚠ código modificado
+                            </span>
+                          )}
+                          <AdminResetDeviceButton licenseId={license.id} deviceId={device.id} />
+                        </div>
+                      ))}
+                    </div>
                   </td>
                   <td style={{ padding: '12px 16px', verticalAlign: 'top', whiteSpace: 'nowrap' }}>{formatDateTime(license.expiresAt)}</td>
                   <td style={{ padding: '12px 16px', verticalAlign: 'top', whiteSpace: 'nowrap' }}>{formatDateTime(license.createdAt)}</td>

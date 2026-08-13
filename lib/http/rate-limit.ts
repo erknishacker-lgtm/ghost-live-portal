@@ -21,6 +21,14 @@ export async function consumeOrThrow(limiter: RateLimiterMemory, key: string) {
 export const rateLimiters = { activateByIp, activateByPair, loginByIp, loginByEmail };
 
 export function clientIp(request: Request): string {
+  // cf-connecting-ip is set by Cloudflare itself and can't be spoofed by the
+  // client (Cloudflare strips/overwrites any client-supplied copy of its own
+  // headers at the edge) — trust it first. x-forwarded-for is attacker-
+  // controllable on any request that reaches the origin directly (bypassing
+  // Cloudflare), which would otherwise let someone dodge IP-based rate
+  // limits and poison the lastIp shown in the admin panel.
+  const cf = request.headers.get('cf-connecting-ip');
+  if (cf) return cf.trim();
   const forwarded = request.headers.get('x-forwarded-for');
   if (forwarded) return forwarded.split(',')[0]!.trim();
   return request.headers.get('x-real-ip') || 'unknown';

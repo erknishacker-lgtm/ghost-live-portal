@@ -13,7 +13,8 @@ const bodySchema = z.object({
   device_name: z.string().trim().optional(),
   app_version: z.string().trim().optional(),
   extension_version: z.string().trim().optional(),
-  platform: z.string().trim().optional()
+  platform: z.string().trim().optional(),
+  code_hash: z.string().trim().optional()
 });
 
 export async function POST(request: Request) {
@@ -41,7 +42,8 @@ export async function POST(request: Request) {
       appVersion: body.app_version,
       extensionVersion: body.extension_version,
       platform: body.platform,
-      ip
+      ip,
+      codeHash: body.code_hash
     });
     return NextResponse.json(result);
   } catch (error) {

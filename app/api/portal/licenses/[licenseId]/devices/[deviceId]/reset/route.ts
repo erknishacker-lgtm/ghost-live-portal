@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { currentPortalUser } from '@/lib/auth/require-user';
 import { prisma } from '@/lib/db/prisma';
-import { deactivateDeviceByRowId } from '@/lib/licensing/core';
+import { deactivateDeviceByCustomer } from '@/lib/licensing/core';
+import { LicenseApiError } from '@/lib/licensing/errors';
 
 export const runtime = 'nodejs';
 
@@ -16,6 +17,17 @@ export async function POST(_request: Request, { params }: { params: { licenseId:
   });
   if (!device) return NextResponse.json({ error: 'Dispositivo não encontrado.' }, { status: 404 });
 
-  await deactivateDeviceByRowId(device.id);
-  return NextResponse.json({ ok: true });
+  try {
+    await deactivateDeviceByCustomer(params.licenseId, device.id);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    if (error instanceof LicenseApiError) {
+      return NextResponse.json(
+        { error: error.message, code: error.code, retryAfterSeconds: error.retryAfterSeconds },
+        { status: error.status }
+      );
+    }
+    console.error('[portal/reset-device]', error);
+    return NextResponse.json({ error: 'Erro interno.' }, { status: 500 });
+  }
 }

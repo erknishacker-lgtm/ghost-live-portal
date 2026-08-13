@@ -5,10 +5,16 @@ export const PORTAL_COOKIE_NAME = 'gl_session';
 const PORTAL_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days, rolling
 
 export function portalCookieOptions(expiresAt: Date) {
-  const isHttps = (process.env.APP_BASE_URL || '').startsWith('https://');
+  // Secure-by-default: only drop the flag for local dev (no HTTPS there).
+  // Deriving this from APP_BASE_URL's "https://" prefix instead would
+  // silently strip Secure from a real production session cookie if that
+  // env var is ever misconfigured (missing/wrong protocol) — a
+  // misconfiguration, not a deployment target, should never be able to
+  // downgrade cookie security on a live site.
+  const isLocalDev = process.env.NODE_ENV !== 'production';
   return {
     httpOnly: true,
-    secure: isHttps,
+    secure: !isLocalDev,
     sameSite: 'lax' as const,
     path: '/',
     expires: expiresAt

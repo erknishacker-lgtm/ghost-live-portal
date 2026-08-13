@@ -4,7 +4,9 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Ghost Live — Portal',
-  description: 'Área de membros e licenciamento da Ghost Live.'
+  description: 'Área de membros e licenciamento da Ghost Live.',
+  // Private members/licensing area — nothing here should be indexed.
+  robots: { index: false, follow: false }
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
