@@ -22,7 +22,10 @@ function buildCsp(nonce: string): string {
 }
 
 export function middleware(request: NextRequest) {
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  // btoa/crypto.randomUUID are Web-standard APIs available in the Edge
+  // Runtime middleware actually runs in — Buffer (Node.js-only) is NOT
+  // available here and throws on every single request if used.
+  const nonce = btoa(crypto.randomUUID());
   const csp = buildCsp(nonce);
 
   const requestHeaders = new Headers(request.headers);
