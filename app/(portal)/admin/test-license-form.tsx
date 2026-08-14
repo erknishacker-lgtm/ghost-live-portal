@@ -8,6 +8,7 @@ type Result = {
   expiresAt: string;
   maxDevices: number;
   emailed: boolean;
+  emailError?: string | null;
 };
 
 export function TestLicenseForm() {
@@ -89,6 +90,22 @@ export function TestLicenseForm() {
               ? 'E-mail com a chave e o link pra definir senha foi enviado.'
               : 'Não foi possível enviar o e-mail — copie e envie a chave manualmente.'}
           </div>
+          {!result.emailed && result.emailError && (
+            <div
+              style={{
+                fontSize: 11,
+                marginBottom: 10,
+                color: '#f87171',
+                fontFamily: 'ui-monospace, monospace',
+                background: '#1a0a0c',
+                border: '1px solid rgba(248,113,113,.3)',
+                borderRadius: 6,
+                padding: '8px 10px'
+              }}
+            >
+              {result.emailError}
+            </div>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 18, fontWeight: 700, letterSpacing: 1 }}>{result.licenseKey}</div>
             <button className="btn-secondary" onClick={copyKey} type="button">

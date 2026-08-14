@@ -48,12 +48,14 @@ export async function createTestLicense(params: {
 
       const token = await createPasswordSetToken(user.id);
       let emailed = true;
+      let emailError: string | null = null;
       await sendSetPasswordEmail(email, user.name, token, license.licenseKey, `teste (${days} dias)`).catch((error) => {
         console.error('[createTestLicense] falha ao enviar e-mail', error);
         emailed = false;
+        emailError = error instanceof Error ? error.message : String(error);
       });
 
-      return { user, license, emailed };
+      return { user, license, emailed, emailError };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') continue;
       throw error;
