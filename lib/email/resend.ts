@@ -23,6 +23,15 @@ async function send(to: string, subject: string, html: string, devLogLabel: stri
   const resend = getClient();
   if (!resend) {
     console.info(`[email:dev] ${devLogLabel} → ${to}\n${html.match(/href="([^"]+)"/)?.[1] ?? ''}`);
+    // In production, "no configured client" means RESEND_API_KEY is
+    // missing/placeholder in the deploy env — that's a misconfiguration, not
+    // the intentional local-dev fallback. Throwing here (instead of
+    // silently returning) makes it surface as emailed:false in the admin
+    // UI and in the caller's .catch() logs, instead of looking like success
+    // while nothing was ever sent to Resend.
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('RESEND_API_KEY não configurada (ou é um placeholder) nesta implantação.');
+    }
     return;
   }
   // resend.emails.send() does NOT throw on API-level failures — it resolves
