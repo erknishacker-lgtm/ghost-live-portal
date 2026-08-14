@@ -7,6 +7,14 @@ RUN npm install
 
 FROM node:20-alpine AS builder
 WORKDIR /app
+# `npm run build` instantiates PrismaClient while collecting page data, which
+# tries to load the query engine right here in the builder stage — not just
+# at runtime. Alpine's OpenSSL auto-detection is unreliable (see the same
+# fix + explanation in the runner stage below), so without this the build
+# itself crashes trying to load a libquery_engine-linux-musl.so.node that
+# was never generated (only the *-openssl-3.0.x one was, per binaryTargets).
+RUN apk add --no-cache openssl
+ENV PRISMA_QUERY_ENGINE_LIBRARY=/app/node_modules/.prisma/client/libquery_engine-linux-musl-openssl-3.0.x.so.node
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
