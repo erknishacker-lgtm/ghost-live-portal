@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { SubscribeSection } from './subscribe-section';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -84,6 +85,7 @@ export default function LoginForm() {
             </a>
           </p>
         </form>
+        <SubscribeSection />
       </section>
     </main>
   );
