@@ -19,6 +19,19 @@ function baseUrl(): string {
   return (process.env.APP_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
 }
 
+// `name` on the set-password email comes from Stripe's customer_details.name
+// — a field the customer types themselves at checkout. Interpolating it into
+// raw HTML unescaped would let someone inject markup into a transactional
+// email sent from our own domain.
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 async function send(to: string, subject: string, html: string, devLogLabel: string) {
   const resend = getClient();
   if (!resend) {
@@ -100,9 +113,10 @@ function button(href: string, label: string): string {
 export async function sendSetPasswordEmail(to: string, name: string | null, token: string, licenseKey: string, plan: string) {
   const link = `${baseUrl()}/set-password?token=${encodeURIComponent(token)}`;
   const firstName = name?.trim().split(' ')[0];
+  const safeFirstName = firstName ? escapeHtml(firstName) : '';
 
   const body = `
-    <h1 style="margin:0 0 6px;font-size:20px;font-weight:800;color:#ffffff;">Olá${firstName ? `, ${firstName}` : ''}.</h1>
+    <h1 style="margin:0 0 6px;font-size:20px;font-weight:800;color:#ffffff;">Olá${safeFirstName ? `, ${safeFirstName}` : ''}.</h1>
     <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#c9c9c9;">
       Sua assinatura Ghost Live (plano <strong style="color:#ffffff;">${plan}</strong>) foi confirmada. Aqui está sua chave de licença:
     </p>

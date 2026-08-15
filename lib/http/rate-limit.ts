@@ -7,6 +7,9 @@ const activateByIp = new RateLimiterMemory({ points: 10, duration: 60 });
 const activateByPair = new RateLimiterMemory({ points: 5, duration: 60 });
 const loginByIp = new RateLimiterMemory({ points: 10, duration: 60 });
 const loginByEmail = new RateLimiterMemory({ points: 5, duration: 60 });
+// Public + unauthenticated (anyone can hit it pre-account) — caps how many
+// Stripe Checkout Sessions one IP can spin up per minute.
+const checkoutByIp = new RateLimiterMemory({ points: 8, duration: 60 });
 
 export async function consumeOrThrow(limiter: RateLimiterMemory, key: string) {
   try {
@@ -18,7 +21,7 @@ export async function consumeOrThrow(limiter: RateLimiterMemory, key: string) {
   }
 }
 
-export const rateLimiters = { activateByIp, activateByPair, loginByIp, loginByEmail };
+export const rateLimiters = { activateByIp, activateByPair, loginByIp, loginByEmail, checkoutByIp };
 
 export function clientIp(request: Request): string {
   // cf-connecting-ip is set by Cloudflare itself and can't be spoofed by the
