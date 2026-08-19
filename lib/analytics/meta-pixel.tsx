@@ -12,11 +12,36 @@ type PixelEvent = {
  * headers by middleware.ts) and stamps it on the inline bootstrap script.
  * Without the nonce, our CSP (script-src 'nonce-...' 'strict-dynamic') would
  * silently block this script from ever running.
+ *
+ * `dedupeKey`, when set, guards the track() calls with a localStorage check
+ * so reloading/revisiting the page (e.g. hitting F5 on the thank-you page)
+ * doesn't re-fire the same event and double-count in Meta's reporting. Pass
+ * something stable and unique to the conversion, e.g. the Stripe session_id
+ * for a Purchase event — not the pixel/page itself.
  */
-export function MetaPixel({ nonce, pixelId, events }: { nonce: string; pixelId: string; events: PixelEvent[] }) {
+export function MetaPixel({
+  nonce,
+  pixelId,
+  events,
+  dedupeKey
+}: {
+  nonce: string;
+  pixelId: string;
+  events: PixelEvent[];
+  dedupeKey?: string;
+}) {
   const trackCalls = events
     .map((event) => `fbq('track', '${event.name}'${event.params ? `, ${JSON.stringify(event.params)}` : ''});`)
     .join('\n');
+
+  const guardedTrackCalls = dedupeKey
+    ? `(function(){
+  var k = 'gl_pixel_fired_' + ${JSON.stringify(dedupeKey)};
+  if (localStorage.getItem(k)) return;
+  localStorage.setItem(k, '1');
+  ${trackCalls}
+})();`
+    : trackCalls;
 
   return (
     <>
@@ -30,7 +55,7 @@ t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
 fbq('init', '${pixelId}');
-${trackCalls}`}
+${guardedTrackCalls}`}
       </Script>
       <noscript>
         {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -36,7 +36,12 @@ export default async function CheckoutSuccessPage({ searchParams }: { searchPara
         textAlign: 'center'
       }}
     >
-      <MetaPixel nonce={nonce} pixelId={GHOST_LIVE_META_PIXEL_ID} events={[{ name: 'Purchase', params }]} />
+      <MetaPixel
+        nonce={nonce}
+        pixelId={GHOST_LIVE_META_PIXEL_ID}
+        events={[{ name: 'Purchase', params }]}
+        dedupeKey={searchParams.session_id}
+      />
 
       <div style={{ maxWidth: 440, marginBottom: 48 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 24 }}>
