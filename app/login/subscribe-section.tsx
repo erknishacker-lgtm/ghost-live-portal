@@ -7,6 +7,10 @@ function formatPrice(cents: number): string {
   return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+function intervalSuffix(interval: 'month' | 'year'): string {
+  return interval === 'year' ? '/ano' : '/mês';
+}
+
 const ACTIVE_PLANS = (Object.entries(PLANS) as [PlanId, (typeof PLANS)[PlanId]][]).filter(([, plan]) => plan.active);
 
 export function SubscribeSection() {
@@ -50,7 +54,9 @@ export function SubscribeSection() {
             onClick={() => subscribe(planId)}
             style={{ width: '100%' }}
           >
-            {loadingPlan === planId ? 'Abrindo pagamento…' : `Assinar — ${plan.label} · ${formatPrice(plan.priceCents)}/mês`}
+            {loadingPlan === planId
+              ? 'Abrindo pagamento…'
+              : `Assinar - ${plan.label} - ${formatPrice(plan.priceCents)}${intervalSuffix(plan.interval)}`}
           </button>
         ))}
       </div>
