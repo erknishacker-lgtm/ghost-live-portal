@@ -13,6 +13,7 @@
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "@prisma/client": "^5.20.0",
     "argon2": "^0.41.1",
     "next": "^14.2.15",

@@ -14,7 +14,8 @@ function buildCsp(nonce: string): string {
     // <img> tag. The fbevents.js script itself loads fine under
     // 'strict-dynamic' (it's inserted by our nonce'd bootstrap script)
     // without needing connect.facebook.net listed here too.
-    `img-src 'self' data: blob: https://www.facebook.com`,
+    // picsum.photos: placeholder photography on the /assinar sales page.
+    `img-src 'self' data: blob: https://www.facebook.com https://picsum.photos https://fastly.picsum.photos`,
     `font-src 'self'`,
     // Meta Pixel's own script makes its tracking calls to these two hosts.
     `connect-src 'self' https://www.facebook.com https://connect.facebook.net`,

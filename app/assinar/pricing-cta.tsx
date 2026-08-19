@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Check } from '@phosphor-icons/react';
 import { PLANS, type PlanId } from '@/lib/billing/plans';
 
 function formatPrice(cents: number): string {
@@ -8,6 +9,8 @@ function formatPrice(cents: number): string {
 }
 
 const ACTIVE_PLANS = (Object.entries(PLANS) as [PlanId, (typeof PLANS)[PlanId]][]).filter(([, plan]) => plan.active);
+
+const INCLUDES = ['Ativação imediata após o pagamento', 'Suporte direto com a equipe', 'Cancele quando quiser'];
 
 export function PricingCta() {
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
@@ -37,35 +40,53 @@ export function PricingCta() {
 
   if (ACTIVE_PLANS.length === 0) return null;
 
+  const [planId, plan] = ACTIVE_PLANS[0]!;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%', maxWidth: 380 }}>
-      {ACTIVE_PLANS.map(([planId, plan]) => (
-        <div key={planId} className="card" style={{ textAlign: 'center', padding: 32 }}>
-          <div style={{ fontSize: 11, letterSpacing: 1, color: '#9a9a9a', textTransform: 'uppercase', marginBottom: 10 }}>
-            {plan.label}
+    <div
+      className="card"
+      style={{
+        width: '100%',
+        maxWidth: 360,
+        padding: 28,
+        borderColor: '#333',
+        background: 'linear-gradient(180deg, #171717 0%, #121212 100%)'
+      }}
+    >
+      <div style={{ fontSize: 11, letterSpacing: 1, color: '#9a9a9a', textTransform: 'uppercase', marginBottom: 8 }}>
+        {plan.label}
+      </div>
+      <div style={{ fontSize: 38, fontWeight: 800, marginBottom: 18, lineHeight: 1 }}>
+        {formatPrice(plan.priceCents)}
+        <span style={{ fontSize: 14, fontWeight: 600, color: '#9a9a9a' }}>/mês</span>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22 }}>
+        {INCLUDES.map((item) => (
+          <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13, color: '#d4d4d4' }}>
+            <Check size={15} weight="bold" color="#8be28b" style={{ flexShrink: 0 }} />
+            {item}
           </div>
-          <div style={{ fontSize: 42, fontWeight: 800, marginBottom: 4 }}>
-            {formatPrice(plan.priceCents)}
-            <span style={{ fontSize: 15, fontWeight: 600, color: '#9a9a9a' }}>/mês</span>
-          </div>
-          <div style={{ color: '#9a9a9a', fontSize: 13, marginBottom: 22 }}>Cancele quando quiser</div>
-          <button
-            type="button"
-            className="btn-primary"
-            disabled={loadingPlan !== null}
-            onClick={() => subscribe(planId)}
-            style={{ width: '100%', padding: '14px' }}
-          >
-            {loadingPlan === planId ? 'Abrindo pagamento…' : 'Assinar agora'}
-          </button>
-        </div>
-      ))}
+        ))}
+      </div>
+
+      <button
+        type="button"
+        className="btn-primary"
+        disabled={loadingPlan !== null}
+        onClick={() => subscribe(planId)}
+        style={{ width: '100%', padding: '14px' }}
+      >
+        {loadingPlan === planId ? 'Abrindo pagamento…' : 'Assinar agora'}
+      </button>
+
       {error && (
-        <p className="error-text" style={{ textAlign: 'center' }}>
+        <p className="error-text" style={{ textAlign: 'center', marginTop: 10, marginBottom: 0 }}>
           {error}
         </p>
       )}
-      <p style={{ textAlign: 'center', fontSize: 12, color: '#666' }}>
+
+      <p style={{ textAlign: 'center', fontSize: 12, color: '#666', marginTop: 14, marginBottom: 0 }}>
         Já é assinante?{' '}
         <a href="/login" style={{ color: '#9a9a9a' }}>
           Entrar
