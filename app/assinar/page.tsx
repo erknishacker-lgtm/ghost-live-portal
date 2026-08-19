@@ -1,4 +1,6 @@
+import { headers } from 'next/headers';
 import { PricingCta } from './pricing-cta';
+import { MetaPixel, GHOST_LIVE_META_PIXEL_ID } from '@/lib/analytics/meta-pixel';
 
 // See app/login/page.tsx for why nonce-based CSP requires this.
 export const dynamic = 'force-dynamic';
@@ -11,8 +13,11 @@ const FEATURES = [
 ];
 
 export default function SalesPage() {
+  const nonce = headers().get('x-nonce') || '';
+
   return (
     <main style={{ background: '#0a0a0a', minHeight: '100vh' }}>
+      <MetaPixel nonce={nonce} pixelId={GHOST_LIVE_META_PIXEL_ID} events={[{ name: 'PageView' }]} />
       {/* Seção 1 — apresentação */}
       <section
         style={{

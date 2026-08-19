@@ -10,9 +10,14 @@ function buildCsp(nonce: string): string {
     // Inline `style={{...}}` is used throughout the portal (no CSS-in-JS
     // nonce support for style attributes), so style-src keeps unsafe-inline.
     `style-src 'self' 'unsafe-inline'`,
-    `img-src 'self' data: blob:`,
+    // facebook.com: Meta Pixel's <noscript> fallback beacon (/tr?...) is an
+    // <img> tag. The fbevents.js script itself loads fine under
+    // 'strict-dynamic' (it's inserted by our nonce'd bootstrap script)
+    // without needing connect.facebook.net listed here too.
+    `img-src 'self' data: blob: https://www.facebook.com`,
     `font-src 'self'`,
-    `connect-src 'self'`,
+    // Meta Pixel's own script makes its tracking calls to these two hosts.
+    `connect-src 'self' https://www.facebook.com https://connect.facebook.net`,
     `frame-ancestors 'none'`,
     `base-uri 'self'`,
     `form-action 'self'`,

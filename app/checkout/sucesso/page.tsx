@@ -1,9 +1,30 @@
+import { headers } from 'next/headers';
+import { stripe } from '@/lib/billing/stripe';
+import { MetaPixel, GHOST_LIVE_META_PIXEL_ID } from '@/lib/analytics/meta-pixel';
+
 // See app/login/page.tsx for why nonce-based CSP requires this.
 export const dynamic = 'force-dynamic';
 
-export default function CheckoutSuccessPage() {
+async function purchaseParams(sessionId: string | undefined) {
+  if (!sessionId) return undefined;
+  try {
+    const session = await stripe().checkout.sessions.retrieve(sessionId);
+    if (typeof session.amount_total !== 'number' || !session.currency) return undefined;
+    return { value: session.amount_total / 100, currency: session.currency.toUpperCase() };
+  } catch (error) {
+    // Pixel firing shouldn't ever block the thank-you page from rendering.
+    console.error('[checkout/sucesso] falha ao buscar sessão do Stripe pro Pixel', error);
+    return undefined;
+  }
+}
+
+export default async function CheckoutSuccessPage({ searchParams }: { searchParams: { session_id?: string } }) {
+  const nonce = headers().get('x-nonce') || '';
+  const params = await purchaseParams(searchParams.session_id);
+
   return (
     <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center' }}>
+      <MetaPixel nonce={nonce} pixelId={GHOST_LIVE_META_PIXEL_ID} events={[{ name: 'Purchase', params }]} />
       <div style={{ maxWidth: 420 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 24 }}>
           <img src="/ghost-logo.png" alt="Ghost Live" style={{ width: 64, height: 64 }} />
